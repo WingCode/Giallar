@@ -28,10 +28,15 @@ import qiskit.circuit.library.standard_gates.t
 import qiskit.circuit.library.standard_gates.s
 import qiskit.circuit.library.standard_gates.swap 
 import qiskit.circuit.library.standard_gates.iswap
-import qiskit.circuit.library.standard_gates.ms
+# The ``ms`` gate (Mølmer-Sørensen) is not available in all Qiskit versions.
+# Import it conditionally so the library can still be used when it is absent.
+try:
+    import qiskit.circuit.library.standard_gates.ms as msgate
+except ModuleNotFoundError:  # pragma: no cover - optional gate
+    msgate = None
 from qiskit.circuit.barrier import Barrier
 from qiskit.circuit.measure import Measure
-from qiskit.circuit.quantumregister import QuantumRegister
+from qiskit.circuit import QuantumRegister
 
 from giallar.gate_info import GateMasterDef
 
@@ -106,8 +111,8 @@ class QGate():
         if self.name.lower() == 'swap':
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.swap.SwapGate()
 
-        if self.name.lower() == 'ms':
-            self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.ms.MSGate()
+        if self.name.lower() == 'ms' and msgate is not None:
+            self.qiskit_info['op'] = msgate.MSGate()
 
         if self.name.lower() == 'iswap':
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.iswap.iSwapGate()

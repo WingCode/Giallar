@@ -19,7 +19,10 @@ from giallar.core.impl.qgate import *
 
 from qiskit.dagcircuit.dagcircuit import DAGCircuit
 from qiskit.dagcircuit.dagnode import DAGNode
-from qiskit.circuit.quantumregister import QuantumRegister, Qubit
+# ``QuantumRegister`` and ``Qubit`` are located directly under
+# ``qiskit.circuit`` in current Qiskit versions.  Import them from there to
+# maintain compatibility with newer releases.
+from qiskit.circuit import QuantumRegister, Qubit
 
 # from qiskit.circuit.library.standard_gates.x import XGate, CXGate
 # from qiskit.circuit.library.standard_gates.y import YGate
@@ -29,7 +32,12 @@ from qiskit.circuit.quantumregister import QuantumRegister, Qubit
 # from qiskit.circuit.library.standard_gates.s import SGate
 # from qiskit.circuit.library.standard_gates.swap import SwapGate
 # from qiskit.circuit.library.standard_gates.iswap import iSwapGate
-from qiskit.circuit.library.standard_gates.ms import MSGate
+# ``MSGate`` is not available in older versions of Qiskit. Import it
+# conditionally so the converter still works when the gate is missing.
+try:
+    from qiskit.circuit.library.standard_gates.ms import MSGate
+except ModuleNotFoundError:  # pragma: no cover
+    MSGate = None
 # from qiskit.circuit.barrier import Barrier
 from qiskit.circuit.reset import Reset
 
@@ -76,7 +84,7 @@ def qiskit_node_to_certiq_gate(node):
         return ret_gate
 
 
-    if node.name == 'ms':        
+    if node.name == 'ms' and MSGate is not None:
         ret_gate =  MSGate(node.qargs[0].__repr__(), node.qargs[1].__repr__())
         # ret_gate.qiskit_info['compatible'] = True
         ret_gate.qiskit_info['op'] = node.op

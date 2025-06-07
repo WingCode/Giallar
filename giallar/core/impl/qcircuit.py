@@ -16,7 +16,11 @@ import re
 from collections import OrderedDict
 from giallar.gate_info import *
 from giallar.core.impl.error_handler import raise_error
-from qiskit.circuit.quantumregister import QuantumRegister, Qubit
+# QuantumRegister and Qubit reside directly under ``qiskit.circuit`` in modern
+# versions of Qiskit.  Older releases provided them under the
+# ``qiskit.circuit.quantumregister`` module.  Import from the current location to
+# remain compatible.
+from qiskit.circuit import QuantumRegister, Qubit
 from copy import deepcopy
 
 
