@@ -55,11 +55,16 @@ def qiskit_node_to_certiq_gate(node):
         # ret_gate.qiskit_info['qargs'] = [node.qargs[0], node.qargs[1]]
         return ret_gate
 
-    if node.name == 'cy':        
+    if node.name == 'cy':
         ret_gate =  CYGate(node.qargs[0].__repr__(), node.qargs[1].__repr__())
         # ret_gate.qiskit_info['compatible'] = True
         ret_gate.qiskit_info['op'] = node.op
         # ret_gate.qiskit_info['qargs'] = [node.qargs[0], node.qargs[1]]
+        return ret_gate
+
+    if node.name == 'dcx':
+        ret_gate =  DCXGate(node.qargs[0].__repr__(), node.qargs[1].__repr__())
+        ret_gate.qiskit_info['op'] = node.op
         return ret_gate
 
 
@@ -130,6 +135,16 @@ def qiskit_node_to_certiq_gate(node):
         # ret_gate.qiskit_info['qargs'] = [node.qargs[0]]
         return ret_gate
 
+    if node.name == 'sx':
+        ret_gate =  Sx(node.qargs[0].__repr__())
+        ret_gate.qiskit_info['op'] = node.op
+        return ret_gate
+
+    if node.name in ['sdg', 'sdag']:
+        ret_gate =  Sdg(node.qargs[0].__repr__())
+        ret_gate.qiskit_info['op'] = node.op
+        return ret_gate
+
     if node.name == 'h':
         ret_gate =  H(node.qargs[0].__repr__())
         # ret_gate.qiskit_info['compatible'] = True
@@ -177,8 +192,8 @@ def qiskit_node_to_certiq_gate(node):
         ret_gate.qiskit_info['params'] = node.op.params
         return ret_gate
 
-    if node.name == 'u3': 
-        ret_gate =  U2Gate(node.qargs[0].__repr__(), node.op.params)
+    if node.name == 'u3':
+        ret_gate =  U3Gate(node.qargs[0].__repr__(), node.op.params)
         # ret_gate.qiskit_info['compatible'] = True
         ret_gate.qiskit_info['op'] = node.op
         # ret_gate.qiskit_info['qargs'] = [node.qargs[0]]

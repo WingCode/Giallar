@@ -15,6 +15,8 @@
 import numpy as np 
 from sympy import I, Matrix, symbols, exp, cos, sin, zeros, eye
 from sympy.physics.quantum import TensorProduct
+from qiskit.converters import dag_to_circuit
+from qiskit.quantum_info import Operator
 # from qutip import QubitCircuit
 from giallar.core.impl.error_handler import raise_error
 
@@ -25,111 +27,12 @@ class Simulator:
     def __init(self, qubit_state_num = 2): 
         self.qubit_state_num = qubit_state_num 
 
-    @staticmethod 
+    @staticmethod
     def apply_circuit(circ):
-
-        qubit_num = len(circ.qubits)
-
-        final_U = eye(2 ** qubit_num)
-
-        for n_layer, layer in enumerate(circ.layers):
-
-            qstate_list = [[GateMasterDef(name = 'Id')] * qubit_num]
-                
-            # In the same layer, gates don't share qubits 
-
-            for g in layer:
-
-                op = circ.gate_list[g]
-
-                if op.name.lower() == 'cnot':
-
-                    qstate_list_ext = [None] * len(qstate_list)
-
-                    for i in range(len(qstate_list)):
-                        qstate_list_ext[i] = list(qstate_list[i])
-
-                    ctrl = circ.qbit2idx[op.qubits[0]] - 1
-                    tgt = circ.qbit2idx[op.qubits[1]] - 1
-                        
-                    for i in range(len(qstate_list)):
-
-                        qstate_list[i][ctrl] = GateMasterDef(name = 'p0')
-                        qstate_list[i][tgt] = GateMasterDef(name = 'id')
-                        qstate_list_ext[i][ctrl] = GateMasterDef(name = 'p1')
-                        qstate_list_ext[i][tgt] = GateMasterDef(name = 'x')
-
-                    qstate_list = qstate_list + qstate_list_ext
-                elif op.name.lower() == 'cz':
-
-                    qstate_list_ext = [None]*len(qstate_list)
-
-                    for i in range(len(qstate_list)):
-                        qstate_list_ext[i] = list(qstate_list[i])
-
-                    ctrl = circ.qbit2idx[op.qubits[0]] - 1
-                    tgt = circ.qbit2idx[op.qubits[1]] - 1
-                        
-                    for i in range(len(qstate_list)):
-
-                        qstate_list[i][ctrl] = GateMasterDef(name = 'p0')
-                        qstate_list[i][tgt] = GateMasterDef(name = 'id')
-                        qstate_list_ext[i][ctrl] = GateMasterDef(name = 'p1')
-                        qstate_list_ext[i][tgt] = GateMasterDef(name = 'z')
-
-                    qstate_list = qstate_list + qstate_list_ext
-
-                elif op.name.lower() in ['rx', 'ry', 'rz']:
-
-                    rot_mat = GateMasterDef(name = op.name, para = op.param)
-                    
-                    for i in range(len(qstate_list)):
-                        qstate_list[i][circ.qbit2idx[op.qubits[0]]-1] = rot_mat
-
-                elif op.name.lower() == 'swap':
-                        
-                    qstate_list_ext = [None]*len(qstate_list)
-                    qstate_list_ext1 = [None]*len(qstate_list)
-                    qstate_list_ext2 = [None]*len(qstate_list)
-
-                    for i in range(len(qstate_list)):
-                        qstate_list_ext[i] = list(qstate_list[i])
-                        qstate_list_ext1[i] = list(qstate_list[i])
-                        qstate_list_ext2[i] = list(qstate_list[i])
-
-
-                    ctrl = circ.qbit2idx[op.qubits[0]] - 1
-                    tgt = circ.qbit2idx[op.qubits[1]] - 1
-                        
-                    for i in range(len(qstate_list)):
-
-                        qstate_list[i][ctrl] = GateMasterDef(name = 'p0')
-                        qstate_list[i][tgt] = GateMasterDef(name = 'p0')
-                        qstate_list_ext[i][ctrl] = GateMasterDef(name = 'p10')
-                        qstate_list_ext[i][tgt] = GateMasterDef(name = 'p01')
-                        qstate_list_ext1[i][ctrl] = GateMasterDef(name = 'p01')
-                        qstate_list_ext1[i][tgt] = GateMasterDef(name = 'p10')
-                        qstate_list_ext2[i][ctrl] = GateMasterDef(name = 'p1')
-                        qstate_list_ext2[i][tgt] = GateMasterDef(name = 'p1')
-
-                    qstate_list = qstate_list + qstate_list_ext + qstate_list_ext1 + qstate_list_ext2
-
-                else:
-
-                    mat = GateMasterDef(name = op.name)
-                    for i in range(len(qstate_list)):
-                        qstate_list[i][circ.qbit2idx[op.qubits[0]]-1] = mat
-
-            n_layer += 1 
-
-            crt = zeros(2 ** qubit_num)
-            
-            for state in qstate_list:
-                crt = crt + _kron_list(state)
-
-            final_U = crt * final_U
-
-        return final_U
+        from giallar.qiskit_wrapper.converter import certiq_circ_to_dag
+        dag = certiq_circ_to_dag(circ)
+        qc = dag_to_circuit(dag)
+        return Matrix(Operator(qc).data)
 
     @staticmethod
     def qutip_unitary(qcirc):
@@ -203,6 +106,18 @@ def GateMasterDef(name = '', para = None):
         return Matrix([[0.0, -1.0j],
                        [1.0j,0.0]])
 
+    if name.lower() == 'cy':
+        return Matrix([[1.0,0.0,0.0,0.0],
+                       [0.0,1.0,0.0,0.0],
+                       [0.0,0.0,0.0,-1.0j],
+                       [0.0,0.0,1.0j,0.0]])
+
+    if name.lower() == 'dcx':
+        return Matrix([[1.0,0.0,0.0,0.0],
+                       [0.0,0.0,0.0,1.0],
+                       [0.0,1.0,0.0,0.0],
+                       [0.0,0.0,1.0,0.0]])
+
     if name.lower() == 'cnot': 
         return Matrix([[1.0,0.0,0.0, 0.0],
                        [0.0,1.0,0.0, 0.0],
@@ -227,7 +142,11 @@ def GateMasterDef(name = '', para = None):
         return Matrix([[1.0, 0.0],
                        [0.0,exp(1j*np.pi/2.0)]])
 
-    if name.lower() == 'sdag':
+    if name.lower() in ['sx', 'sqrtx']:
+        return Matrix([[0.5+0.5j, 0.5-0.5j],
+                       [0.5-0.5j, 0.5+0.5j]])
+
+    if name.lower() in ['sdag', 'sdg']:
         return Matrix([[1.0, 0.0],
                        [0.0,-exp(1j*np.pi/2.0)]])
 
@@ -303,6 +222,7 @@ gate_info = {
               'cnot': {'id': 1, 'argn': 2, 'type': 1},
               'cy': {'id': 2, 'argn': 2, 'type': 2},
               'cz': {'id': 3, 'argn': 2, 'type': 3},
+              'dcx': {'id': 24, 'argn': 2, 'type': 2},
               'h': {'id': 4, 'argn': 1, 'type': 4},
               'y': {'id': 5, 'argn': 1, 'type': 5},
               'z': {'id': 6, 'argn': 1, 'type': 6},
@@ -310,6 +230,8 @@ gate_info = {
               'rz': {'id': 8, 'argn': 1, 'type': 6},
               't': {'id': 9, 'argn': 1, 'type': 6},
               's': {'id': 10, 'argn': 1, 'type': 6},
+              'sdg': {'id': 22, 'argn': 1, 'type': 6},
+              'sx': {'id': 23, 'argn': 1, 'type': 7},
               'rx': {'id': 11, 'argn': 1, 'type': 7},
               'x': {'id': 12, 'argn': 1, 'type': 7},
               'barrier': {'id': 13, 'argn': 1, 'type':8},

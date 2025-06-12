@@ -26,7 +26,9 @@ import qiskit.circuit.library.standard_gates.u3
 import qiskit.circuit.library.standard_gates.h
 import qiskit.circuit.library.standard_gates.t
 import qiskit.circuit.library.standard_gates.s
-import qiskit.circuit.library.standard_gates.swap 
+import qiskit.circuit.library.standard_gates.sx
+import qiskit.circuit.library.standard_gates.swap
+import qiskit.circuit.library.standard_gates.dcx
 import qiskit.circuit.library.standard_gates.iswap
 try:
     import qiskit.circuit.library.standard_gates.ms as ms_gate
@@ -147,6 +149,15 @@ class QGate():
         if self.name.lower() == 's':
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.s.SGate()
 
+        if self.name.lower() in ['sdag', 'sdg']:
+            self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.s.SdgGate()
+
+        if self.name.lower() == 'sx':
+            self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.sx.SXGate()
+
+        if self.name.lower() == 'dcx':
+            self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.dcx.DCXGate()
+
         if self.name.lower() == 'rx':
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.rx.RXGate(self.param)
 
@@ -211,6 +222,18 @@ class S(QGate):
     def __init__(self, op):
         super().__init__("s", [op])
 
+class Sdg(QGate):
+    def __init__(self, op):
+        super().__init__("sdg", [op])
+
+class Sx(QGate):
+    def __init__(self, op):
+        super().__init__("sx", [op])
+
+class DCXGate(QGate):
+    def __init__(self, op1, op2):
+        super().__init__("dcx", [op1, op2])
+
 class T(QGate):
     def __init__(self, op):
         super().__init__("t", [op])
@@ -269,12 +292,13 @@ def qubit_string_to_qiskit_qubit(st):
     if not isinstance(st, str):
         st = str(st)
 
-    match = re.compile("(\w+)\(QuantumRegister\((\d+),\s'(\w+)'\),\s(\d+)").search(st)
-    
-    if match and match.group(1) == "Qubit":
+    match = re.search(r"Qubit\(QuantumRegister\((\d+),\s'([^']+)'\),\s(\d+)\)", st)
+    if not match:
+        match = re.search(r"register=\((\d+),\s'([^']+)'\),\sindex=(\d+)", st)
+    if not match:
+        match = re.search(r"register=\((\d+),\s\"([^\"]+)\"\),\sindex=(\d+)", st)
 
-        q = QuantumRegister(int(match.group(2)), name = match.group(3))
-        return q[int(match.group(4))]
-    
-    else:
-        return None
+    if match:
+        q = QuantumRegister(int(match.group(1)), name=match.group(2))
+        return q[int(match.group(3))]
+    return None
