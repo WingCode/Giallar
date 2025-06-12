@@ -16,7 +16,7 @@ import re
 from collections import OrderedDict
 from giallar.gate_info import *
 from giallar.core.impl.error_handler import raise_error
-from qiskit.circuit.quantumregister import QuantumRegister, Qubit
+from qiskit.circuit import QuantumRegister, Qubit
 from copy import deepcopy
 
 

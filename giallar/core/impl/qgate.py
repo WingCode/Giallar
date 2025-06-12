@@ -28,10 +28,13 @@ import qiskit.circuit.library.standard_gates.t
 import qiskit.circuit.library.standard_gates.s
 import qiskit.circuit.library.standard_gates.swap 
 import qiskit.circuit.library.standard_gates.iswap
-import qiskit.circuit.library.standard_gates.ms
+try:
+    import qiskit.circuit.library.standard_gates.ms as ms_gate
+except Exception:  # pragma: no cover - gate not available in some versions
+    ms_gate = None
 from qiskit.circuit.barrier import Barrier
 from qiskit.circuit.measure import Measure
-from qiskit.circuit.quantumregister import QuantumRegister
+from qiskit.circuit import QuantumRegister
 
 from giallar.gate_info import GateMasterDef
 
@@ -107,7 +110,9 @@ class QGate():
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.swap.SwapGate()
 
         if self.name.lower() == 'ms':
-            self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.ms.MSGate()
+            if ms_gate is None:
+                raise TypeError("MSGate not available in this Qiskit version")
+            self.qiskit_info['op'] = ms_gate.MSGate()
 
         if self.name.lower() == 'iswap':
             self.qiskit_info['op'] = qiskit.circuit.library.standard_gates.iswap.iSwapGate()
